@@ -28,3 +28,13 @@
     margin-top: 70px;
     border-top: 1px solid #E5E5E5;
 }
+
+#spy_marker{
+    position: absolute;
+    background-color: blue;
+    width: 4px;
+    height: 4px;
+    left: 0px;
+    top:0px;
+    display: none;
+}

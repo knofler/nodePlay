@@ -50,8 +50,12 @@ module.exports = function (socketio) {
       console.info('[%s] DISCONNECTED', socket.address);
     });
 
-    socket.on('sendMouse',function(data){
-      console.log(data);
+    socket.on('sendMouse',function(x,y){
+        socket.broadcast.emit("sendMouse",{
+        x:x,
+        y:y
+      })
+      // console.log("x is " + x  +" and y is " + y );
       });
 
     // Call onConnect.
