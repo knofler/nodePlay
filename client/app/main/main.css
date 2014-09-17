@@ -30,11 +30,12 @@
 }
 
 #spy_marker{
-    position: absolute;
+    position:relative;
     background-color: blue;
-    width: 4px;
-    height: 4px;
+    width: 6px;
+    height: 6px;
     left: 0px;
     top:0px;
-    display: none;
+    display:none;
+    border-radius: 50%;
 }
