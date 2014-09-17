@@ -18,16 +18,8 @@ angular.module('nodeAppApp')
     };
     $scope.sendSock =function(){
      $("body").bind("mousemove",function(evt){
-    
-      // var x=window.event.clientX;
-      // var y=window.event.clientY;
-      // socket.socket.emit("sendMouse",{data:{
-      //   x:x,
-      //   y:y
-      // }
       socket.socket.emit("sendMouse",evt.pageX,evt.pageY);
-    });
-  // console.log("X co ordinate is " + x + " and y co ordinate is " + y)
+      });
     };
 
     $scope.spy =function(move){
@@ -35,7 +27,7 @@ angular.module('nodeAppApp')
         left:(move.x -2) + "px",
         right:(move.y -2) + "px"
       });
-    };
+     };
 
     socket.socket.on("sendMouse",function(move){
        $("#spy_marker").show().css({
