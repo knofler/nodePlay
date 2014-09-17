@@ -228,4 +228,51 @@ video {
   }
 }
 
+  .blur {
+    -webkit-filter: blur(3px);
+  }
+  .grayscale {
+    -webkit-filter: grayscale(1);
+  }
+  .invert {
+    -webkit-filter: invert(1);
+  }
+  .sepia {
+    -webkit-filter: sepia(1);
+  }
+  button {
+    width: 8.1em;
+  }
+  button#snapshot {
+    margin: 0 1em 1em 0;
+  }
 
+
+ body, html {
+    height: 100%;
+  }
+
+  button {
+    margin: 0 1em 0 0;
+    width: 100px;
+  }
+
+  div#buttons {
+    margin: 0 0 1em 0;
+  }
+
+  .video#container {
+    margin: 0 auto 0 auto
+    max-width: 100%;
+  }
+
+  p#dimensions {
+    height: 1em;
+    margin: 0 0 1.5em 0;
+  }
+
+  video {
+    background: none;
+    height: auto;
+    width: auto;
+  }
