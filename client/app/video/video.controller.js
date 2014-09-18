@@ -164,13 +164,6 @@ angular.module('nodeAppApp')
 
 	//Local audio media start and stop control
 	$scope.audioStart = function (){
-	    try {
-	      window.AudioContext = window.AudioContext || window.webkitAudioContext;
-	      $scope.audioContext = new AudioContext();
-	    } catch(e) {
-	      alert('Web Audio API not found');
-	    }
-
 	  navigator.getUserMedia($scope.audioConstraints,$scope.gotAudioStream,$scope.audioStreamFailed);
 	   $scope.startButton.disabled = true;
        $scope.stopButton.disabled = false;
@@ -194,6 +187,15 @@ angular.module('nodeAppApp')
 	  }, 500);
 	 });
 
+	//onLoad Event
+	$scope.onload = function() {
+	 try {
+	      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+	      $scope.audioContext = new AudioContext();
+	    } catch(e) {
+	      alert('Web Audio API not found');
+	    }
+	 };   
 	//Video event controllers
 	$scope.snapshotButton.onclick = function snap(){
 	  $scope.canvas.getContext("2d").drawImage($scope.video, 0, 0, $scope.canvas.width, $scope.canvas.height);
@@ -255,11 +257,11 @@ angular.module('nodeAppApp')
 	    
 	    // Set up reporting of the volume every 0.2 seconds.
 	    //Volume meter display
-		var meter 		  	= $('#volume'),
-			decaying_meter 	= $('#decaying_volume'),
-	    	meter_canvas   	= $('graphic_volume').getContext('2d'),
-			meter_slow 	  	= $('graphic_slow').getContext('2d'),
-			meter_clip 	  	= $('graphic_clip').getContext('2d');
+		var meter 		  	= $('volume'),
+			decaying_meter 	= $('decaying_volume'),
+	    	meter_canvas   	= document.querySelector("canvas#graphic_volume").getContext('2d'),
+			meter_slow 	  	= document.querySelector("canvas#graphic_slow").getContext('2d'),
+			meter_clip 	  	= document.querySelector("canvas#graphic_clip").getContext('2d');
 
 	    $scope.reporter = setInterval(function() {
           meter.textContent 	= $scope.soundMeter.volume.toFixed(2);
