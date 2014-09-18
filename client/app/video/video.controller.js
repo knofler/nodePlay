@@ -5,20 +5,43 @@ angular.module('nodeAppApp')
 
   	//declare video stream variable
 	$scope.stream;
-
+	$scope.localStream;
   	//Capture Query Collectors on a variable
   	$scope.video 		  = document.querySelector("video");
+  	$scope.audio 		  = document.querySelector("audio");
+  	//targeting canvas and display areas
+  	$scope.canvas         = document.querySelector("canvas");
+  	$scope.dimensions     = document.querySelector("p#dimensions");
+  	// General control buttons
 	$scope.button         = document.querySelector("button");
-	$scope.canvas         = document.querySelector("canvas");
+	$scope.startButton 	  = document.querySelector("button#start");
+	$scope.stopButton 	  = document.querySelector("button#stop");
+	//Specific purpose buttons
   	$scope.snapshotButton = document.querySelector("button#snapshot");
 	$scope.filterButton   = document.querySelector("button#filter");
+	//Resolution buttons
 	$scope.vgaButton 	  = document.querySelector("button#vga");
 	$scope.qvgaButton 	  = document.querySelector("button#qvga");
 	$scope.hdButton       = document.querySelector("button#hd");
-	$scope.dimensions     = document.querySelector("p#dimensions");
+	//Media Selections
+	$scope.audioSelect 	  = document.querySelector("select#audioSource");
+	$scope.videoSelect 	  = document.querySelector("select#videoSource");
+	
+	
+	//Media sources
+	$scope.audioSource = $scope.audioSelect.value;
+	$scope.videoSource = $scope.videoSelect.value;
 
-	//Various Static Arrays for options
-	$scope.constraints 	= {audio: false, video: true};
+	//Various Static Arrays for Constraints and options
+	$scope.constraints 	= {
+	    audio: {
+	      optional: [{sourceId: $scope.audioSource}]
+	    },
+	    video: {
+	      optional: [{sourceId: $scope.videoSource}]
+	    }
+	  };
+	$scope.audioConstraints = {audio:true,video:false};  
 	$scope.filters 		= ['blur', 'grayscale', 'invert', 'sepia'];
 
 	//Video quality control constraints array
@@ -51,6 +74,59 @@ angular.module('nodeAppApp')
 	$scope.canvas.width  = 480;
 	$scope.canvas.height = 360;
 
+	//Collect media sources and store into arrays
+	$scope.gotSources = function(sourceInfos) {
+	  for (var i = 0; i != sourceInfos.length; ++i) {
+	    var sourceInfo = sourceInfos[i];
+	    var option = document.createElement("option");
+	    option.value = sourceInfo.id;
+	    if (sourceInfo.kind === 'audio') {
+	      option.text = sourceInfo.label || 'microphone ' + ($scope.audioSelect.length + 1);
+	      $scope.audioSelect.appendChild(option);
+	    } else if (sourceInfo.kind === 'video') {
+	      option.text = sourceInfo.label || 'camera ' + ($scope.videoSelect.length + 1);
+	      $scope.videoSelect.appendChild(option);
+	    } else {
+	      console.log('Some other kind of source: ', sourceInfo);
+	    }
+	  }
+	 };
+
+	//browser compatibility for MediaStreaTrack  
+	if (typeof MediaStreamTrack === 'undefined'){
+	  alert('This browser does not support MediaStreamTrack.\n\nTry Chrome Canary.');
+	 } else {
+	  MediaStreamTrack.getSources($scope.gotSources);
+	 };
+
+	//Start and Stop Media on user selection of media inputs
+	$scope.start = function (){
+	  if (!!window.stream) {
+	    $scope.video.src = null;
+	    window.stream.stop();
+	  }
+	  navigator.getUserMedia($scope.constraints,$scope.successCallback,$scope.errorCallback);
+	   $scope.startButton.disabled = true;
+       $scope.stopButton.disabled = false;
+	 };
+	$scope.stop = function (){
+	   $scope.startButton.enabled = true;
+       $scope.stopButton.enabled = false;
+	   window.stream.stop();
+	 }; 
+
+	//Local audio media start and stop control
+	$scope.audioStart = function (){
+	  navigator.getUserMedia($scope.audioConstraints,$scope.gotAudioStream,$scope.audioStreamFailed);
+	   $scope.startButton.disabled = true;
+       $scope.stopButton.disabled = false;
+	 }; 
+	$scope.audioStop = function (){
+	   $scope.startButton.enabled = true;
+       $scope.stopButton.enabled = false;
+	  $scope.localStream.stop();
+	 }; 
+
 	//Video Dimenssion controller
 	$scope.displayVideoDimensions = function () {
   		$scope.dimensions.innerHTML = "Actual video dimensions: " + $scope.video.videoWidth +
@@ -79,11 +155,15 @@ angular.module('nodeAppApp')
 	$scope.qvgaButton.onclick = function(){$scope.getMedia($scope.qvgaConstraints)};
 	$scope.vgaButton.onclick = function(){$scope.getMedia($scope.vgaConstraints)};
 	$scope.hdButton.onclick = function(){$scope.getMedia($scope.hdConstraints)};		
+
+	//User media Selection event controller
+	$scope.audioSelect.onchange = $scope.start;
+	$scope.videoSelect.onchange = $scope.start;
 	
 	//Set appropriate type of getUserMedia()
 	navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 
-	// media call back and error handling
+	// Video Stream Call back and error handling
 	$scope.successCallback = function (stream){
 	  window.stream = stream; // stream available to console
 	  if (window.URL) {
@@ -96,6 +176,32 @@ angular.module('nodeAppApp')
 	  console.log("navigator.getUserMedia error: ", error);
 		};
 
+	//Audio Stream call back and error handling	
+	$scope.gotAudioStream =function(stream) {
+	   var videoTracks = stream.getVideoTracks();
+	   var audioTracks = stream.getAudioTracks();
+	    if (audioTracks.length == 1 && videoTracks.length == 0) {
+	      console.log('gotStream({audio:true, video:false})');
+	      console.log('Using audio device: ' + audioTracks[0].label);
+	      attachMediaStream($scope.audio, stream);
+	      stream.onended = function() {
+	        console.log('stream.onended');
+	        $scope.startButton.disabled = false;
+	        $scope.stopButton.disabled = true;
+	      };
+
+	      $scope.localStream = stream;
+	    } else {
+	      alert('The media stream contains an invalid amount of audio tracks.');
+	      stream.audioStop();
+	    }
+  	 };
+	$scope.audioStreamFailed =function(error) {
+	    $scope.startButton.disabled = false;
+	    $scope.stopButton.disabled = true;
+	    alert('Failed to get access to local media. Error code: ' + error.code);
+ 	 }; 	
+
 	//Make video stream available to view	
 	$scope.getMedia =function(constraints){
 		if (!!$scope.stream) {
@@ -104,4 +210,7 @@ angular.module('nodeAppApp')
 		  }
 		  navigator.getUserMedia(constraints, $scope.successCallback, $scope.errorCallback);
 	  };
+
+	//Auto invoke MediaStream on Page Load
+	// $scope.start();  
   });
