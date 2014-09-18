@@ -6,6 +6,12 @@ angular.module('nodeAppApp')
   	//declare video stream variable
 	$scope.stream;
 	$scope.localStream;
+	//Volume control
+	$scope.reporter;
+  	$scope.audioContext;
+  	//instantiate class variable
+  	$scope.soundMeter;
+
   	//Capture Query Collectors on a variable
   	$scope.video 		  = document.querySelector("video");
   	$scope.audio 		  = document.querySelector("audio");
@@ -26,7 +32,6 @@ angular.module('nodeAppApp')
 	//Media Selections
 	$scope.audioSelect 	  = document.querySelector("select#audioSource");
 	$scope.videoSelect 	  = document.querySelector("select#videoSource");
-	
 	
 	//Media sources
 	$scope.audioSource = $scope.audioSelect.value;
@@ -74,6 +79,48 @@ angular.module('nodeAppApp')
 	$scope.canvas.width  = 480;
 	$scope.canvas.height = 360;
 
+	//SoundMeter Class Definition
+
+	// Meter class that generates a number correlated to audio volume.
+    // The meter class itself displays nothing, but it makes the
+    // instantaneous and time-decaying volumes available for inspection.
+    // It also reports on the fraction of samples that were at or near
+    // the top of the measurement range.
+  	$scope.SoundMeter = function(context) {
+	    this.context = context
+	    this.volume = 0.0;
+	    this.slow_volume = 0.0;
+	    this.clip = 0.0;
+	    this.script = context.createScriptProcessor(2048, 1, 1);
+	    var that = this;
+	    this.script.onaudioprocess = function(event) {
+	      var input = event.inputBuffer.getChannelData(0);
+	      var i;
+	      var sum = 0.0;
+	      var clipcount = 0;
+	      for (i = 0; i < input.length; ++i) {
+	        sum += input[i] * input[i];
+	        if (Math.abs(input[i]) > 0.99) {
+	          clipcount += 1
+	        }
+	      }
+	      that.volume = Math.sqrt(sum / input.length);
+	      that.slow_volume = 0.95 * that.slow_volume + 0.05 * that.volume;
+	      that.clip = clipcount / input.length;
+	    }
+     };
+	$scope.SoundMeter.prototype.connectToSource = function(stream) {
+     	console.log('SoundMeter connecting');
+    	this.mic = this.context.createMediaStreamSource(stream);
+    	this.mic.connect(this.script);
+	    // Necessary to make sample run, but should not be.
+	    this.script.connect(this.context.destination);
+	  };
+	$scope.SoundMeter.prototype.stop = function() {
+	    this.mic.disconnect();
+	    this.script.disconnect();
+	  }; 
+
 	//Collect media sources and store into arrays
 	$scope.gotSources = function(sourceInfos) {
 	  for (var i = 0; i != sourceInfos.length; ++i) {
@@ -117,6 +164,13 @@ angular.module('nodeAppApp')
 
 	//Local audio media start and stop control
 	$scope.audioStart = function (){
+	    try {
+	      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+	      $scope.audioContext = new AudioContext();
+	    } catch(e) {
+	      alert('Web Audio API not found');
+	    }
+
 	  navigator.getUserMedia($scope.audioConstraints,$scope.gotAudioStream,$scope.audioStreamFailed);
 	   $scope.startButton.disabled = true;
        $scope.stopButton.disabled = false;
@@ -124,7 +178,9 @@ angular.module('nodeAppApp')
 	$scope.audioStop = function (){
 	   $scope.startButton.enabled = true;
        $scope.stopButton.enabled = false;
-	  $scope.localStream.stop();
+	   $scope.localStream.stop();
+	   clearInterval($scope.reporter);
+       $scope.soundMeter.stop();
 	 }; 
 
 	//Video Dimenssion controller
@@ -189,18 +245,47 @@ angular.module('nodeAppApp')
 	        $scope.startButton.disabled = false;
 	        $scope.stopButton.disabled = true;
 	      };
-
 	      $scope.localStream = stream;
+
+	    //instantiate SoundMeter Class
+		$scope.soundMeter = new $scope.SoundMeter($scope.audioContext);    
+	      
+	    //execute connectToSource method from SoundMeter Object
+      	$scope.soundMeter.connectToSource(stream);
+	    
+	    // Set up reporting of the volume every 0.2 seconds.
+	    //Volume meter display
+		var meter 		  	= $('#volume'),
+			decaying_meter 	= $('#decaying_volume'),
+	    	meter_canvas   	= $('graphic_volume').getContext('2d'),
+			meter_slow 	  	= $('graphic_slow').getContext('2d'),
+			meter_clip 	  	= $('graphic_clip').getContext('2d');
+
+	    $scope.reporter = setInterval(function() {
+          meter.textContent 	= $scope.soundMeter.volume.toFixed(2);
+          decaying_meter.textContent = $scope.soundMeter.slow_volume.toFixed(2);
+          $scope.paintMeter(meter_canvas, $scope.soundMeter.volume);
+          $scope.paintMeter(meter_slow, $scope.soundMeter.slow_volume);
+          $scope.paintMeter(meter_clip, $scope.soundMeter.clip);
+	     }, 200);
+
 	    } else {
-	      alert('The media stream contains an invalid amount of audio tracks.');
-	      stream.audioStop();
-	    }
+	      alert('The media stream contains an invalid number of tracks:'
+	         + audioTracks.length + ' audio ' + videoTracks.length + ' video');
+	      stream.stop();
+    	}
   	 };
 	$scope.audioStreamFailed =function(error) {
 	    $scope.startButton.disabled = false;
 	    $scope.stopButton.disabled = true;
 	    alert('Failed to get access to local media. Error code: ' + error.code);
- 	 }; 	
+ 	 }; 	  
+
+	$scope.paintMeter = function(context, number) {
+     context.clearRect(0, 0, 400, 20);
+     context.fillStyle = 'red';
+     context.fillRect(0, 0, number * 400, 20);
+  	 };  
 
 	//Make video stream available to view	
 	$scope.getMedia =function(constraints){
