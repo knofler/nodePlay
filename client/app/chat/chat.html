@@ -1,6 +1,34 @@
 <div ng-include="'components/navbar/navbar.html'"></div>
 <div class="container">
 
+  <h1> Chat using <span>RTCDataChannel</span></h1>
+
+  <div id="buttons">
+    <button id="startButton">Start</button>
+    <button id="sendButton" disabled>Send</button>
+    <button id="closeButton" disabled>Stop</button>
+  </div>
+
+  <form>
+    <span>Choose protocol for transmitting data:</span>
+    <input type="radio" id="useSctp" name="transportbtn" checked />
+    <label for="useSctp">SCTP</label>
+    <input type="radio" id="useRtp" name="transportbtn" />
+    <label for="useRtp">RTP</label>
+  </form>
+
+  <div id="sendReceive">
+    <div id="send">
+      <h2>Send</h2>
+      <textarea id="dataChannelSend" disabled placeholder="Press Start, enter some text, then press Send."></textarea>
+    </div>
+    <div id="receive">
+      <h2>Receive</h2>
+      <textarea id="dataChannelReceive" disabled></textarea>
+    </div>
+  </div>
+
+  <p>View the console to see logging.</p>
 </div>
 
 
