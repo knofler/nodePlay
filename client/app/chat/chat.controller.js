@@ -3,13 +3,6 @@
 angular.module('nodeAppApp')
   .controller('ChatCtrl', function ($scope) {
 
-  	/*
- *  Copyright (c) 2014 The WebRTC project authors. All Rights Reserved.
- *
- *  Use of this source code is governed by a BSD-style license
- *  that can be found in the LICENSE file in the root of the source
- *  tree.
- */
 $scope.localConnection;
 $scope.remotePeerConnection;
 $scope.sendChannel; 
@@ -20,29 +13,9 @@ $scope.dataChannelSend 		= document.querySelector('textarea#dataChannelSend');
 $scope.dataChannelReceive 	= document.querySelector('textarea#dataChannelReceive');
 $scope.sctpSelect 			= document.querySelector('input#useSctp');
 $scope.rtpSelect 			= document.querySelector('input#useRtp');
-$scope.startButton 			= document.querySelector('button#startButton');
-$scope.sendButton 			= document.querySelector('button#sendButton');
-$scope.closeButton 			= document.querySelector('button#closeButton');
 
-$scope.startButton.onclick 	= function () { $scope.createConnection(); };
-$scope.sendButton.onclick 	= function () { $scope.sendData(); };
-$scope.closeButton.onclick 	= function () { $scope.closeDataChannels(); };
-$scope.rtpSelect.onclick 	= function () { $scope.enableStartButton(); };
-$scope.sctpSelect.onclick 	= function () { $scope.enableStartButton(); };
-
-$scope.enableStartButton = function () {
-  $scope.startButton.disabled = false;
- };
-$scope.disableSendButton = function () {
-  $scope.sendButton.disabled = true;
- };
-
-$scope.rtpSelect.onclick = $scope.sctpSelect.onclick = function() {
-  $scope.dataChannelReceive.value = '';
-  $scope.dataChannelSend.value = '';
-  $scope.disableSendButton();
-  $scope.enableStartButton();
- };
+$scope.enableSendClose = true;
+$scope.ctrlStart = false;
 
 $scope.createConnection = function () {
   $scope.dataChannelSend.placeholder = '';
@@ -91,8 +64,8 @@ $scope.createConnection = function () {
   $scope.remotePeerConnection.ondatachannel  = $scope.receiveChannelCallback;
 
   $scope.localConnection.createOffer($scope.gotDescription1, $scope.onCreateSessionDescriptionError);
-  $scope.startButton.disabled = true;
-  $scope.closeButton.disabled = false;
+  $scope.ctrlStart = true;
+  $scope.enableSendClose =false;
  };
 $scope.onCreateSessionDescriptionError = function (error) {
   trace('Failed to create session description: ' + error.toString());
@@ -113,9 +86,8 @@ $scope.closeDataChannels 			= function () {
   $scope.localConnection = null;
   $scope.remotePeerConnection = null;
   trace('Closed peer connections');
-  $scope.startButton.disabled = false;
-  $scope.sendButton.disabled = true;
-  $scope.closeButton.disabled = true;
+  $scope.ctrlStart = false;
+  $scope.enableSendClose =true;
   $scope.dataChannelSend.value = '';
   $scope.dataChannelReceive.value = '';
   $scope.dataChannelSend.disabled = true;
@@ -170,12 +142,10 @@ $scope.onSendChannelStateChange 	= function () {
   if ($scope.readyState == 'open') {
     $scope.dataChannelSend.disabled = false;
     $scope.dataChannelSend.focus();
-    $scope.sendButton.disabled = false;
-    $scope.closeButton.disabled = false;
+    $scope.enableSendClose = false;
   } else {
     $scope.dataChannelSend.disabled = true;
-    $scope.sendButton.disabled = true;
-    $scope.closeButton.disabled = true;
+    $scope.enableSendClose = true;
   }
  };
 $scope.onReceiveChannelStateChange 	= function () {
@@ -184,9 +154,4 @@ $scope.onReceiveChannelStateChange 	= function () {
  };
 
 
-
-
-
-
-
-  });
+});
