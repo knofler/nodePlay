@@ -1,0 +1,10 @@
+#spy_marker{
+    position:relative;
+    background-color: blue;
+    width: 6px;
+    height: 6px;
+    left: 0px;
+    top:0px;
+    display:none;
+    border-radius: 50%;
+}

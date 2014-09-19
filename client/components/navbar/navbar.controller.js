@@ -2,10 +2,13 @@
 
 angular.module('nodeAppApp')
   .controller('NavbarCtrl', function ($scope, $location, Auth) {
-    $scope.menu = [{
-      'title': 'Home',
-      'link': '/'
-    }];
+    $scope.menu = [
+      {'title': 'Home','link': '/'},
+      {'title': 'Video','link': '/video'},
+      {'title': 'websocket','link': '/websocket'},
+      {'title': 'webrtc','link': '/webrtc'},
+      {'title': 'chat','link': '/chat'}
+    ];
 
     $scope.isCollapsed = true;
     $scope.isLoggedIn = Auth.isLoggedIn;
