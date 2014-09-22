@@ -5,6 +5,7 @@ angular.module('nodeAppApp')
     $scope.menu = [
       {'title': 'Home','link': '/'},
       {'title': 'Video','link': '/video'},
+      {'title': 'Audio','link': '/audio'},
       {'title': 'websocket','link': '/websocket'},
       {'title': 'webrtc','link': '/webrtc'},
       {'title': 'chat','link': '/chat'}
