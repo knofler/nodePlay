@@ -208,6 +208,19 @@ angular.module('nodeAppApp')
   	$scope.audioPlay.addEventListener('ended',function(){
   		document.querySelector("#audioInfo").innerHTML = "<p>Media Play ended status is : <span> <b>" + $scope.audioPlay.ended +"</b></span><br />"
   	 });
+  	$scope.audioPlay.addEventListener('volumechange',function(){
+  	  console.log($scope.audioPlay.volume);
+  	 });
+  	$scope.audioPlay.addEventListener('timeupdate',$scope.updatePlayed,false);
+
+  	$scope.updatePlayed = function(){
+  		var played = parseInt((($scope.audioPlay.currentTime/$scope.audioPlay.duration)*100),10);
+  		$scope.addBars(played,'played-bar');
+  	};
+
+  	$scope.volumeControl = function(){
+  		$scope.audioPlay.volume -=0.1;
+  	 };
   	
  	//Audio Context onLoad Event
 	$scope.onload = function() {
