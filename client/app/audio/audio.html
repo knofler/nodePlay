@@ -20,15 +20,47 @@
   <canvas id="graphic_slow" width="400" height="20"></canvas> Slow<br>
   <canvas id="graphic_clip" width="400" height="20"></canvas> Clipping
   <div id="playAudio">
-	 <audio id="audioPlay" autoplay="autoplay" src="/assets/media/test.mp3" controls="controls" buffered></audio><br><br>
-	 	<div id="audioInfo"></div><hr>
-		  <button id="playStart" 	ng-click="playStart()">Play</button>
-		  <button id="playPause" 	ng-click="playPause()">Pause</button>
-	  	  <button id="playStop" 	ng-click="playStop()">Stop Play</button><hr>
+	 <audio id="audioPlay" src="/assets/media/test.mp3" controls="controls"></audio><br><br>
+	
+	 <div class="form-group">
+    <label>volume: <input min="0" max="1" step="0.01" type="range" ng-model="audioPlay.volume" /></label>
+</div>
+
+<div class="form-group">
+    <button ng-disabled="currentNum == 0" class="btn btn-default prev" ng-click="prev()"><i class="glyphicon glyphicon-step-backward"></i> prev</button>
+    <button class="btn btn-default playpause" ng-click="playpause()" ng-class="{paused:audioPlay.paused}">
+        <span class="play-text"><i class="glyphicon glyphicon-play"></i> play</span>
+        <span class="pause-text"><i class="glyphicon glyphicon-pause"></i> pause</span>
+    </button>
+    <button ng-disabled="currentNum >= (totalNum-1)" class="btn btn-default next" ng-click="next()">next <i class="glyphicon glyphicon-step-forward"></i></button>
+</div>
+
+<div class="form-group time">
+    <label>time: <input min="0" max="{{audioPlay.duration}}" step="0.01" type="range" ng-model="audioPlay.currentTime" /></label>
+</div>
+
+<div class="form-group now-playing">
+    <p>Now Playing: <img width="30" height="30" src="{{info.image}}" /></p>
+    <p>{{info.artist.name}} - {{info.title}}</p>
+</div>
+
+
+	 <div id="playrate">
+	 	<button id="playStart" 	ng-click="playStart()">Play</button>
+		<button id="playPause" 	ng-click="playPause()">Pause</button>
+	  	<button id="playStop" 	ng-click="playStop()">Stop</button><hr>
+	 	<button id="playFast" 	ng-click="playFast()">Play Fast</button>
+		<button id="slowMotion" ng-click="slowMotion()">Slow Motion </button>
+		<button id="repeatPlay" ng-click="playRepeat()">Repeat</button>
+		<button id="playEnd" 	ng-click="playEnd()">Play end </button><hr>
+	 </div>
+	 	<div id="audioInfo"></div><span id="audioStaticinfo"></span><hr>
+		  
 	  	  <button id="playSupport" 	ng-click="supportType('video/mp4','avc1.42E01E, mp4a.40.2')">Can Play?</button>
 	  	  <button id="playbuffered" ng-click="bufferedInfo()">Show Buffer</button>
 	  	  <button id="playSource" 	ng-click="mediaSource()">Media Source</button>
   </div>
+
   <div id="resultDiv"></div>
   {{onload()}}
 </div>
