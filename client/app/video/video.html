@@ -29,28 +29,6 @@
   <canvas></canvas>
   <p>Draw a frame from the video onto the canvas element using the <code>drawImage()</code> method.then apply CSS filters.</p>
 </div>
-<div id="container">
-<p>Local Audio loop back testing</p>
- <audio id="audio" autoplay="autoplay" controls="controls"></audio><br><br>
-  <button id="start" ng-click="audioStart()">Start</button>
-  <button id="stop" ng-click="audioStop()">Stop</button>
-  <h2>Measuring the volume of an audio stream using WebAudio</h2>
-  <p>Demonstrates measuring the volume of a local media stream
-     using WebAudio.<br>
-     Press Start, select a microphone, listen to your own voice in loopback,
-     and see the numbers change as you speak.</p>
-     The "instant" volume changes approximately every 50 ms; the "slow"
-     volume approximates the average volume over about a second.
-  <br>
-     Note that you will NOT hear your own voice; use the for that.
-  <p>
-  Volume (instant): <span id="volume">Not set</span><br>
-  Volume (slow): <span id="decaying_volume">Not set</span><br>
-  <canvas id="graphic_volume" width="400" height="20"></canvas> Volume<br>
-  <canvas id="graphic_slow" width="400" height="20"></canvas> Slow<br>
-  <canvas id="graphic_clip" width="400" height="20"></canvas> Clipping
-</div>
-{{onload()}}
 <footer class="footer">
   <div class="container">
       <p>nodeApp Playground |

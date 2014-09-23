@@ -1,6 +1,41 @@
 <div ng-include="'components/navbar/navbar.html'"></div>
 <div class="audio" id="container">
-<div id="container">
-<audio id="audio" src="/assets/media/test.mp3" autoplay="autoplay" controls="controls"></audio><br><br>
+<p>Local Audio loop back testing</p>
+ <audio id="audioRecord" autoplay="autoplay" controls="controls"></audio><br><br>
+  <button id="recordStart" ng-click="recordStart()">Record</button>
+  <button id="recordStop" ng-click="recordStop()">Stop Record</button>
+  <h2>Measuring the volume of an audio stream using WebAudio</h2>
+  <p>Demonstrates measuring the volume of a local media stream
+     using WebAudio.<br>
+     Press Start, select a microphone, listen to your own voice in loopback,
+     and see the numbers change as you speak.</p>
+     The "instant" volume changes approximately every 50 ms; the "slow"
+     volume approximates the average volume over about a second.
+  <br>
+     Note that you will NOT hear your own voice; use the for that.
+  <p>
+  Volume (instant): <span id="volume">Not set</span><br>
+  Volume (slow): <span id="decaying_volume">Not set</span><br>
+  <canvas id="graphic_volume" width="400" height="20"></canvas> Volume<br>
+  <canvas id="graphic_slow" width="400" height="20"></canvas> Slow<br>
+  <canvas id="graphic_clip" width="400" height="20"></canvas> Clipping
+  <div id="playAudio">
+	 <audio id="audioPlay" autoplay="autoplay" src="/assets/media/test.mp3" controls="controls" buffered></audio><br><br>
+	 	<div id="audioInfo"></div><hr>
+		  <button id="playStart" 	ng-click="playStart()">Play</button>
+		  <button id="playPause" 	ng-click="playPause()">Pause</button>
+	  	  <button id="playStop" 	ng-click="playStop()">Stop Play</button><hr>
+	  	  <button id="playSupport" 	ng-click="supportType('video/mp4','avc1.42E01E, mp4a.40.2')">Can Play?</button>
+	  	  <button id="playbuffered" ng-click="bufferedInfo()">Show Buffer</button>
+	  	  <button id="playSource" 	ng-click="mediaSource()">Media Source</button>
+  </div>
+  <div id="resultDiv"></div>
+  {{onload()}}
 </div>
-</div>
+<footer class="footer">
+  <div class="container">
+      <p>nodeApp Playground |
+        <a href="https://twitter.com/merumman">@merumman</a> |
+         <a href="https://github.com/knofler/nodePlay/issues">Issues</a></p>
+  </div>
+</footer>

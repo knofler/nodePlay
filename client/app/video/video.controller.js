@@ -4,17 +4,10 @@ angular.module('nodeAppApp')
   .controller('VideoCtrl', function ($scope) {
 
   	//declare video stream variable
-	$scope.stream;
 	$scope.localStream;
-	//Volume control
-	$scope.reporter;
-  	$scope.audioContext;
-  	//instantiate class variable
-  	$scope.soundMeter;
 
   	//Capture Query Collectors on a variable
   	$scope.video 		  = document.querySelector("video");
-  	$scope.audio 		  = document.querySelector("audio");
   	//targeting canvas and display areas
   	$scope.canvas         = document.querySelector("canvas");
   	$scope.dimensions     = document.querySelector("p#dimensions");
@@ -46,7 +39,6 @@ angular.module('nodeAppApp')
 	      optional: [{sourceId: $scope.videoSource}]
 	    }
 	  };
-	$scope.audioConstraints = {audio:true,video:false};  
 	$scope.filters 		= ['blur', 'grayscale', 'invert', 'sepia'];
 
 	//Video quality control constraints array
@@ -79,47 +71,6 @@ angular.module('nodeAppApp')
 	$scope.canvas.width  = 480;
 	$scope.canvas.height = 360;
 
-	//SoundMeter Class Definition
-
-	// Meter class that generates a number correlated to audio volume.
-    // The meter class itself displays nothing, but it makes the
-    // instantaneous and time-decaying volumes available for inspection.
-    // It also reports on the fraction of samples that were at or near
-    // the top of the measurement range.
-  	$scope.SoundMeter = function(context) {
-	    this.context = context
-	    this.volume = 0.0;
-	    this.slow_volume = 0.0;
-	    this.clip = 0.0;
-	    this.script = context.createScriptProcessor(2048, 1, 1);
-	    var that = this;
-	    this.script.onaudioprocess = function(event) {
-	      var input = event.inputBuffer.getChannelData(0);
-	      var i;
-	      var sum = 0.0;
-	      var clipcount = 0;
-	      for (i = 0; i < input.length; ++i) {
-	        sum += input[i] * input[i];
-	        if (Math.abs(input[i]) > 0.99) {
-	          clipcount += 1
-	        }
-	      }
-	      that.volume = Math.sqrt(sum / input.length);
-	      that.slow_volume = 0.95 * that.slow_volume + 0.05 * that.volume;
-	      that.clip = clipcount / input.length;
-	    }
-     };
-	$scope.SoundMeter.prototype.connectToSource = function(stream) {
-     	console.log('SoundMeter connecting');
-    	this.mic = this.context.createMediaStreamSource(stream);
-    	this.mic.connect(this.script);
-	    // Necessary to make sample run, but should not be.
-	    this.script.connect(this.context.destination);
-	  };
-	$scope.SoundMeter.prototype.stop = function() {
-	    this.mic.disconnect();
-	    this.script.disconnect();
-	  }; 
 
 	//Collect media sources and store into arrays
 	$scope.gotSources = function(sourceInfos) {
@@ -162,20 +113,6 @@ angular.module('nodeAppApp')
 	   window.stream.stop();
 	 }; 
 
-	//Local audio media start and stop control
-	$scope.audioStart = function (){
-	  navigator.getUserMedia($scope.audioConstraints,$scope.gotAudioStream,$scope.audioStreamFailed);
-	   $scope.startButton.disabled = true;
-       $scope.stopButton.disabled = false;
-	 }; 
-	$scope.audioStop = function (){
-	   $scope.startButton.enabled = true;
-       $scope.stopButton.enabled = false;
-	   $scope.localStream.stop();
-	   clearInterval($scope.reporter);
-       $scope.soundMeter.stop();
-	 }; 
-
 	//Video Dimenssion controller
 	$scope.displayVideoDimensions = function () {
   		$scope.dimensions.innerHTML = "Actual video dimensions: " + $scope.video.videoWidth +
@@ -186,16 +123,7 @@ angular.module('nodeAppApp')
 	    $scope.displayVideoDimensions();
 	  }, 500);
 	 });
-
-	//onLoad Event
-	$scope.onload = function() {
-	 try {
-	      window.AudioContext = window.AudioContext || window.webkitAudioContext;
-	      $scope.audioContext = new AudioContext();
-	    } catch(e) {
-	      alert('Web Audio API not found');
-	    }
-	 };   
+ 
 	//Video event controllers
 	$scope.snapshotButton.onclick = function snap(){
 	  $scope.canvas.getContext("2d").drawImage($scope.video, 0, 0, $scope.canvas.width, $scope.canvas.height);
@@ -234,61 +162,6 @@ angular.module('nodeAppApp')
 	  console.log("navigator.getUserMedia error: ", error);
 		};
 
-	//Audio Stream call back and error handling	
-	$scope.gotAudioStream =function(stream) {
-	   var videoTracks = stream.getVideoTracks();
-	   var audioTracks = stream.getAudioTracks();
-	    if (audioTracks.length == 1 && videoTracks.length == 0) {
-	      console.log('gotStream({audio:true, video:false})');
-	      console.log('Using audio device: ' + audioTracks[0].label);
-	      attachMediaStream($scope.audio, stream);
-	      stream.onended = function() {
-	        console.log('stream.onended');
-	        $scope.startButton.disabled = false;
-	        $scope.stopButton.disabled = true;
-	      };
-	      $scope.localStream = stream;
-
-	    //instantiate SoundMeter Class
-		$scope.soundMeter = new $scope.SoundMeter($scope.audioContext);    
-	      
-	    //execute connectToSource method from SoundMeter Object
-      	$scope.soundMeter.connectToSource(stream);
-	    
-	    // Set up reporting of the volume every 0.2 seconds.
-	    //Volume meter display
-		var meter 		  	= $('volume'),
-			decaying_meter 	= $('decaying_volume'),
-	    	meter_canvas   	= document.querySelector("canvas#graphic_volume").getContext('2d'),
-			meter_slow 	  	= document.querySelector("canvas#graphic_slow").getContext('2d'),
-			meter_clip 	  	= document.querySelector("canvas#graphic_clip").getContext('2d');
-
-	    $scope.reporter = setInterval(function() {
-          meter.textContent 	= $scope.soundMeter.volume.toFixed(2);
-          decaying_meter.textContent = $scope.soundMeter.slow_volume.toFixed(2);
-          $scope.paintMeter(meter_canvas, $scope.soundMeter.volume);
-          $scope.paintMeter(meter_slow, $scope.soundMeter.slow_volume);
-          $scope.paintMeter(meter_clip, $scope.soundMeter.clip);
-	     }, 200);
-
-	    } else {
-	      alert('The media stream contains an invalid number of tracks:'
-	         + audioTracks.length + ' audio ' + videoTracks.length + ' video');
-	      stream.stop();
-    	}
-  	 };
-	$scope.audioStreamFailed =function(error) {
-	    $scope.startButton.disabled = false;
-	    $scope.stopButton.disabled = true;
-	    alert('Failed to get access to local media. Error code: ' + error.code);
- 	 }; 	  
-
-	$scope.paintMeter = function(context, number) {
-     context.clearRect(0, 0, 400, 20);
-     context.fillStyle = 'red';
-     context.fillRect(0, 0, number * 400, 20);
-  	 };  
-
 	//Make video stream available to view	
 	$scope.getMedia =function(constraints){
 		if (!!$scope.stream) {
@@ -297,7 +170,5 @@ angular.module('nodeAppApp')
 		  }
 		  navigator.getUserMedia(constraints, $scope.successCallback, $scope.errorCallback);
 	  };
-
-	//Auto invoke MediaStream on Page Load
-	// $scope.start();  
+ 
   });
