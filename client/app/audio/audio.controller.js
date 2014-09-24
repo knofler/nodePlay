@@ -17,7 +17,9 @@ angular.module('nodeAppApp')
   	$scope.showCurrentTime;
   	$scope.mediaDuration;
   	$scope.audioPlay.playbackRate = 1.0;
-  	$scope.audioPlay.volume = 1.0;
+  	// $scope.audioPlay.volume = 1;
+  	$scope.seekVolData  = 1;
+  	$scope.seekContData = 0;
   	$scope.audioPlay.ended;
 
   	//Custom start stop and other button element selector
@@ -26,6 +28,9 @@ angular.module('nodeAppApp')
 	$scope.playStartButton 	  = document.querySelector("button#playStart");
 	$scope.playPauseButton 	  = document.querySelector("button#playPause");
 	$scope.playSupportButton  = document.querySelector("button#playStop");
+	$scope.volumeSeeker  	  = document.querySelector("#volumeSeeker");
+
+	// console.log($scope.volumeSeeker);
 
 	//Define Audio constraints for customized options
   	$scope.audioConstraints = {audio:true,video:false};  
@@ -111,8 +116,8 @@ angular.module('nodeAppApp')
 			meter_clip 	  	= document.querySelector("canvas#graphic_clip").getContext('2d');
 
 	    $scope.reporter = setInterval(function() {
-          meter.textContent 	= $scope.soundMeter.volume.toFixed(2);
-          decaying_meter.textContent = $scope.soundMeter.slow_volume.toFixed(2);
+          meter.textContent 			= $scope.soundMeter.volume.toFixed(2);
+          decaying_meter.textContent 	= $scope.soundMeter.slow_volume.toFixed(2);
           $scope.paintMeter(meter_canvas, $scope.soundMeter.volume);
           $scope.paintMeter(meter_slow, $scope.soundMeter.slow_volume);
           $scope.paintMeter(meter_clip, $scope.soundMeter.clip);
@@ -131,7 +136,7 @@ angular.module('nodeAppApp')
  	 }; 	  
 	$scope.paintMeter 		 = function(context, number) {
      context.clearRect(0, 0, 400, 20);
-     context.fillStyle = 'red';
+     context.fillStyle = 'orange';
      context.fillRect(0, 0, number * 400, 20);
   	 };    
 
@@ -196,6 +201,13 @@ angular.module('nodeAppApp')
 		  	$scope.audioPlay.loop = false;
 		  }	
   	 }; 
+  	$scope.seekVolume 		 = function(){
+  		$scope.audioPlay.volume = $scope.seekVolData /100 ;
+  	 };
+  	$scope.seekContent       = function(){
+  		var seekto = audioPlay.duration * ($scope.seekContData /100);
+  		$scope.audioPlay.currentTime = seekto;
+  	 }; 
 
   	//Web Audio Events
   	$scope.audioPlay.addEventListener('timeupdate',function(){
@@ -203,7 +215,7 @@ angular.module('nodeAppApp')
 	  		document.querySelector("#audioInfo").innerHTML = "<p>Current Media time is : <span> <b>" + $scope.showCurrentTime +"</b></span><br />"+
 	  		"Current Media play rate is <span> <b>" + $scope.audioPlay.playbackRate + "</b></span><br />"+
 	  		"Repeat option enable is <span> <b>"+ $scope.audioPlay.loop + "</b></span></p>";
-	  		// console.log($scope.showCurrentTime)
+	  		console.log("Current time is " + $scope.audioPlay.currentTime);
 	  	  });
   	$scope.audioPlay.addEventListener('ended',function(){
   		document.querySelector("#audioInfo").innerHTML = "<p>Media Play ended status is : <span> <b>" + $scope.audioPlay.ended +"</b></span><br />"
@@ -211,17 +223,8 @@ angular.module('nodeAppApp')
   	$scope.audioPlay.addEventListener('volumechange',function(){
   	  console.log($scope.audioPlay.volume);
   	 });
-  	$scope.audioPlay.addEventListener('timeupdate',$scope.updatePlayed,false);
+  
 
-  	$scope.updatePlayed = function(){
-  		var played = parseInt((($scope.audioPlay.currentTime/$scope.audioPlay.duration)*100),10);
-  		$scope.addBars(played,'played-bar');
-  	};
-
-  	$scope.volumeControl = function(){
-  		$scope.audioPlay.volume -=0.1;
-  	 };
-  	
  	//Audio Context onLoad Event
 	$scope.onload = function() {
 	 try {
