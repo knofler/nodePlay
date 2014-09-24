@@ -4,6 +4,7 @@ angular.module('nodeAppApp')
   .controller('NavbarCtrl', function ($scope, $location, Auth) {
     $scope.menu = [
       {'title': 'Home','link': '/'},
+      {'title': 'File Share','link': '/fileshare'},
       {'title': 'Video','link': '/video'},
       {'title': 'Audio','link': '/audio'},
       {'title': 'websocket','link': '/websocket'},
