@@ -15,4 +15,7 @@ audio-player * {
     -ms-user-select: none;
     user-select: none;
 }
+input.custSeeker{
+	width: 200px;
+}
 
