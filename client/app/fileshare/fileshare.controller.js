@@ -31,9 +31,9 @@ $scope.photoContextH = 150;
 
 // Attach even handlers
 $scope.video.addEventListener('play', $scope.setCanvasDimensions);
-$scope.snapBtn.addEventListener('click', $scope.snapPhoto);
-$scope.sendBtn.addEventListener('click', $scope.sendPhoto);
-$scope.snapAndSendBtn.addEventListener('click', $scope.snapAndSend);
+// $scope.snapBtn.addEventListener('click', $scope.snapPhoto);
+// $scope.sendBtn.addEventListener('click', $scope.sendPhoto);
+// $scope.snapAndSendBtn.addEventListener('click', $scope.snapAndSend);
 
 // Create a random room if not already present in the URL.
 $scope.isInitiator;
@@ -120,8 +120,8 @@ $scope.getMediaSuccessCallback 	= function (stream) {
   var streamURL = window.URL.createObjectURL(stream);
   console.log('getUserMedia video stream URL:', streamURL);
   window.stream = stream; // stream available to console
-  $scope.ideo.src = streamURL;
-  $scope.show(snapBtn);
+  $scope.video.src = streamURL;
+  $scope.show($scope.snapBtn);
  };
 $scope.getMediaErrorCallback 	= function (error) {
   console.log('getUserMedia error:', error);
@@ -139,11 +139,11 @@ $scope.signalingMessageCallback   = function (message) {
     console.log('Got offer. Sending answer to peer.');
     $scope.peerConn.setRemoteDescription(new RTCSessionDescription(message), function() {},
       logError);
-    $scope.peerConn.createAnswer(onLocalSessionCreated, logError);
+    $scope.peerConn.createAnswer($scope.onLocalSessionCreated, logError);
 
   } else if (message.type === 'answer') {
     console.log('Got answer.');
-    peerConn.setRemoteDescription(new RTCSessionDescription(message), function() {},
+    $scope.peerConn.setRemoteDescription(new RTCSessionDescription(message), function() {},
       logError);
 
   } else if (message.type === 'candidate') {
@@ -177,7 +177,7 @@ $scope.createPeerConnection       = function (isInitiator, config) {
   if (isInitiator) {
     console.log('Creating Data Channel');
     $scope.dataChannel = $scope.peerConn.createDataChannel('photos');
-    $scope.onDataChannelCreated(dataChannel);
+    $scope.onDataChannelCreated($scope.dataChannel);
 
     console.log('Creating an offer');
     $scope.peerConn.createOffer($scope.onLocalSessionCreated, logError);
@@ -193,7 +193,7 @@ $scope.onLocalSessionCreated      = function (desc) {
   console.log('local session created:', desc);
   $scope.peerConn.setLocalDescription(desc, function() {
     console.log('sending local desc:', $scope.peerConn.localDescription);
-    $scope.sendMessage(peerConn.localDescription);
+    $scope.sendMessage($scope.peerConn.localDescription);
   }, logError);
  };
 $scope.onDataChannelCreated       = function (channel) {
@@ -203,8 +203,8 @@ $scope.onDataChannelCreated       = function (channel) {
   };
 
   channel.onmessage = (webrtcDetectedBrowser === 'firefox') ?
-    receiveDataFirefoxFactory() :
-    receiveDataChromeFactory();
+    $scope.receiveDataFirefoxFactory() :
+    $scope.receiveDataChromeFactory();
  };
 $scope.receiveDataChromeFactory   = function () {
   var buf, count;
@@ -225,7 +225,7 @@ $scope.receiveDataChromeFactory   = function () {
     if (count === buf.byteLength) {
       // we're done: all data chunks have been received
       console.log('Done. Rendering photo.');
-      renderPhoto(buf);
+      $scope.renderPhoto(buf);
     }
   };
  };
@@ -255,7 +255,7 @@ $scope.receiveDataFirefoxFactory  = function () {
           buf.set(new Uint8ClampedArray(this.result), pos);
           if (i + 1 === parts.length) {
             console.log('Done. Rendering photo.');
-            renderPhoto(buf);
+            $scope.renderPhoto(buf);
           } else {
             compose(i + 1, pos + this.result.byteLength);
           }
@@ -273,37 +273,37 @@ $scope.receiveDataFirefoxFactory  = function () {
  ****************************************************************************/
 
 $scope.snapPhoto 			= function () {
-  photoContext.drawImage(video, 0, 0, photoContextW, photoContextH);
-  show(photo, sendBtn);
+  $scope.photoContext.drawImage($scope.video, 0, 0, $scope.photoContextW, $scope.photoContextH);
+  $scope.show($scope.photo, $scope.sendBtn);
  };
 $scope.sendPhoto 			= function () {
   // Split data channel message in chunks of this byte length.
   var CHUNK_LEN = 64000;
 
-  var img = photoContext.getImageData(0, 0, photoContextW, photoContextH),
+  var img = $scope.photoContext.getImageData(0, 0, $scope.photoContextW, $scope.photoContextH),
     len = img.data.byteLength,
     n = len / CHUNK_LEN | 0;
 
   console.log('Sending a total of ' + len + ' byte(s)');
-  dataChannel.send(len);
-
+  $scope.dataChannel.send(len);
+  
   // split the photo and send in chunks of about 64KB
   for (var i = 0; i < n; i++) {
     var start = i * CHUNK_LEN,
       end = (i + 1) * CHUNK_LEN;
     console.log(start + ' - ' + (end - 1));
-    dataChannel.send(img.data.subarray(start, end));
+    $scope.dataChannel.send(img.data.subarray(start, end));
   }
 
   // send the reminder, if any
   if (len % CHUNK_LEN) {
     console.log('last ' + len % CHUNK_LEN + ' byte(s)');
-    dataChannel.send(img.data.subarray(n * CHUNK_LEN));
+    $scope.dataChannel.send(img.data.subarray(n * CHUNK_LEN));
   }
  };
 $scope.snapAndSend 			= function () {
-  snapPhoto();
-  sendPhoto();
+  $scope.snapPhoto();
+  $scope.sendPhoto();
  };
 $scope.renderPhoto 			= function (data) {
   var canvas = document.createElement('canvas');
@@ -311,25 +311,25 @@ $scope.renderPhoto 			= function (data) {
   trail.insertBefore(canvas, trail.firstChild);
 
   var context = canvas.getContext('2d');
-  var img = context.createImageData(photoContextW, photoContextH);
+  var img = context.createImageData($scope.photoContextW, $scope.photoContextH);
   img.data.set(data);
   context.putImageData(img, 0, 0);
  };
 $scope.setCanvasDimensions 	= function () {
-  if (video.videoWidth === 0) {
-    setTimeout(setCanvasDimensions, 200);
+  if ($scope.video.videoWidth === 0) {
+    setTimeout($scope.setCanvasDimensions, 200);
     return;
   }
 
-  console.log('video width:', video.videoWidth, 'height:', video.videoHeight);
+  console.log('video width:', $scope.video.videoWidth, 'height:', $scope.video.videoHeight);
 
-  photoContextW = video.videoWidth / 2;
-  photoContextH = video.videoHeight / 2;
+  $scope.photoContextW = $scope.video.videoWidth / 2;
+  $scope.photoContextH = $scope.video.videoHeight / 2;
   //photo.style.width = photoContextW + 'px';
   //photo.style.height = photoContextH + 'px';
   // TODO: figure out right dimensions
-  photoContextW = 300; //300;
-  photoContextH = 150; //150;
+  $scope.photoContextW = 300; //300;
+  $scope.photoContextH = 150; //150;
  };
 $scope.show 				= function () {
   Array.prototype.forEach.call(arguments, function(elem) {
@@ -350,3 +350,4 @@ $scope.logError 			= function (err) {
 
 
 });
+	
