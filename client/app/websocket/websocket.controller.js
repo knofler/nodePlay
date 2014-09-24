@@ -23,6 +23,7 @@ angular.module('nodeAppApp')
      };
 
     socket.socket.on("sendMouse",$scope.spy);
+    
     $scope.$on('$destroy', function () {
       socket.unsyncUpdates('thing');
       });

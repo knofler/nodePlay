@@ -4,6 +4,7 @@
   <h1> Chat using <span>RTCDataChannel</span></h1>
 
   <div id="buttons">
+   <!--  <button id="connectBtn"  ng-click="createConnection()" ng-disabled="ctrlStart">Start</button> -->
     <button id="startButton" ng-click="createConnection()" ng-disabled="ctrlStart">Start</button>
     <button id="sendButton"  ng-click="sendData()" ng-disabled="enableSendClose">Send</button>
     <button id="closeButton" ng-click="closeDataChannels()" ng-disabled="enableSendClose">Stop</button>
@@ -11,9 +12,9 @@
 
   <form>
     <span>Choose protocol for transmitting data:</span>
-    <input type="radio" id="useSctp" ng-model="dataInputOutput" value="SCTP" name="transportbtn" checked />
+    <input type="radio" id="useSctp" value="SCTP" name="transportbtn" checked />
     <label for="useSctp">SCTP</label>
-    <input type="radio" id="useRtp" ng-model="dataInputOutput" value="RTP" name="transportbtn" />
+    <input type="radio" id="useRtp" value="RTP" name="transportbtn" />
     <label for="useRtp">RTP</label>
   </form>
 
@@ -24,7 +25,7 @@
     </div>
     <div id="receive">
       <h2>Receive</h2>
-      <textarea id="dataChannelReceive" ng-model="dataInputOutput" disabled></textarea>
+      <textarea id="dataChannelReceive" disabled></textarea>
     </div>
   </div>
 

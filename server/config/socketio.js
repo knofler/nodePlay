@@ -57,6 +57,9 @@ module.exports = function (socketio) {
       })
       // console.log("x is " + x  +" and y is " + y );
       });
+    socket.on('sendData',function(data){
+      socket.broadcast.emit('chat',{srvmsg:data.msg})
+    })
 
     // Call onConnect.
     onConnect(socket);
