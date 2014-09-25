@@ -277,23 +277,11 @@ $scope.sendPhoto 			      = function () {
 
   // Split data channel message in chunks of this byte length.
   var CHUNK_LEN = 64000;
-
   var img = $scope.photoContext.getImageData(0, 0, $scope.photoContextW, $scope.photoContextH),
 
     len = img.data.byteLength,
     n = len / CHUNK_LEN | 0;
-
   console.log('Sending a total of ' + len + ' byte(s)');
-  console.log("photo " + $scope.photo );
-  console.log("photoContext " + $scope.photoContext );
-  console.log("photoContext value " + $scope.photoContext.value );
-  console.log("photo value " + $scope.photo.value );
-  console.log("img " + img);
-  console.log("$scope.photoContextW " + $scope.photoContextW );
-  console.log("$scope.photoContextH " + $scope.photoContextH );
-  console.log("len " + len );
-  console.log("$scope.dataChannel " + $scope.dataChannel );
-
   $scope.dataChannel.send(len);
   
   // split the photo and send in chunks of about 64KB
