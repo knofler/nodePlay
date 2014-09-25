@@ -36,7 +36,7 @@ $scope.video.addEventListener('play', $scope.setCanvasDimensions);
 $scope.isInitiator;
 $scope.room = window.location.hash.substring(1);
 if (!$scope.room) {
-  $scope.room = window.location.hash + $scope.randomToken;
+  $scope.room = window.location.hash = $scope.randomToken;
  };
 
 
@@ -97,7 +97,7 @@ $scope.updateRoomURL = function(ipaddr) {
   if (!ipaddr) {
     url = location.href;
   } else {
-    url = location.protocol + '//' + ipaddr + ':9000/#' + room;
+    url = location.protocol + '//' + ipaddr + ':9000/#' + $scope.room;
   }
   $scope.roomURL.innerHTML = url;
  };
