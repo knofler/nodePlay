@@ -41,7 +41,7 @@ module.exports = function (socketio) {
     socket.address = socket.handshake.address !== null ?
       socket.handshake.address.address + ':' + socket.handshake.address.port :
       process.env.DOMAIN;
-
+       
     socket.connectedAt = new Date();
 
     // Call onDisconnect.
@@ -74,7 +74,7 @@ module.exports = function (socketio) {
     socket.on('create or join', function(room) {
       log('Received request to create or join room ' + room);
 
-      var numClients = 1;//socketio.sockets.length
+      var numClients = socketio.sockets.sockets.length;
       log('Room ' + room + ' now has ' + numClients + ' client(s)');
 
       if (numClients === 1) {
@@ -92,16 +92,16 @@ module.exports = function (socketio) {
         socket.emit('full', room);
       }
      });
-    // socket.on('ipaddr', function() {
-    //   var ifaces = os.networkInterfaces();
-    //   for (var dev in ifaces) {
-    //     ifaces[dev].forEach(function(details) {
-    //       if (details.family === 'IPv4' && details.address !== '127.0.0.1') {
-    //         socket.emit('ipaddr', details.address);
-    //       }
-    //     });
-    //   }
-    //  });
+    socket.on('ipaddr', function() {
+      var ifaces = os.networkInterfaces();
+      for (var dev in ifaces) {
+        ifaces[dev].forEach(function(details) {
+          if (details.family === 'IPv4' && details.address !== '127.0.0.1') {
+            socket.emit('ipaddr', details.address);
+          }
+        });
+      }
+     });
 
     // Call onConnect.
     onConnect(socket);

@@ -31,15 +31,12 @@ $scope.photoContextH = 150;
 
 // Attach even handlers
 $scope.video.addEventListener('play', $scope.setCanvasDimensions);
-// $scope.snapBtn.addEventListener('click', $scope.snapPhoto);
-// $scope.sendBtn.addEventListener('click', $scope.sendPhoto);
-// $scope.snapAndSendBtn.addEventListener('click', $scope.snapAndSend);
 
 // Create a random room if not already present in the URL.
 $scope.isInitiator;
 $scope.room = window.location.hash.substring(1);
 if (!$scope.room) {
-  // $scope.room = window.location.hash = $scope.randomToken();
+  $scope.room = window.location.hash + $scope.randomToken;
  };
 
 
@@ -67,7 +64,7 @@ socket.socket.on('full', function(room) {
   window.location.reload();
  });
 socket.socket.on('ready', function() {
-  $scope.createPeerConnection(isInitiator, configuration);
+  $scope.createPeerConnection($scope.isInitiator, $scope.configuration);
  });
 socket.socket.on('log', function(array) {
   console.log.apply(console, array);
@@ -100,7 +97,7 @@ $scope.updateRoomURL = function(ipaddr) {
   if (!ipaddr) {
     url = location.href;
   } else {
-    url = location.protocol + '//' + ipaddr + ':2013/#' + room;
+    url = location.protocol + '//' + ipaddr + ':9000/#' + room;
   }
   $scope.roomURL.innerHTML = url;
  };
@@ -110,7 +107,7 @@ $scope.updateRoomURL = function(ipaddr) {
  * User media (webcam)
  ****************************************************************************/
 
-$scope.grabWebCamVideo 			= function () {
+$scope.grabWebCamVideo 			    = function () {
   console.log('Getting user media (video) ...');
   getUserMedia({
     video: true
@@ -123,7 +120,7 @@ $scope.getMediaSuccessCallback 	= function (stream) {
   $scope.video.src = streamURL;
   $scope.show($scope.snapBtn);
  };
-$scope.getMediaErrorCallback 	= function (error) {
+$scope.getMediaErrorCallback 	  = function (error) {
   console.log('getUserMedia error:', error);
  };
 
@@ -138,13 +135,13 @@ $scope.signalingMessageCallback   = function (message) {
   if (message.type === 'offer') {
     console.log('Got offer. Sending answer to peer.');
     $scope.peerConn.setRemoteDescription(new RTCSessionDescription(message), function() {},
-      logError);
-    $scope.peerConn.createAnswer($scope.onLocalSessionCreated, logError);
+      $scope.logError);
+    $scope.peerConn.createAnswer($scope.onLocalSessionCreated, $scope.logError);
 
   } else if (message.type === 'answer') {
     console.log('Got answer.');
     $scope.peerConn.setRemoteDescription(new RTCSessionDescription(message), function() {},
-      logError);
+      $scope.logError);
 
   } else if (message.type === 'candidate') {
     $scope.peerConn.addIceCandidate(new RTCIceCandidate({
@@ -164,23 +161,23 @@ $scope.createPeerConnection       = function (isInitiator, config) {
   $scope.peerConn.onicecandidate = function(event) {
     console.log('onIceCandidate event:', event);
     if (event.candidate) {
-      sendMessage({
+      $scope.sendMessage({
         type: 'candidate',
         label: event.candidate.sdpMLineIndex,
         id: event.candidate.sdpMid,
         candidate: event.candidate.candidate
       });
     } else {
-      console.log('End of candidates.');
+    console.log('End of candidates.');
     }
-   };
-  if (isInitiator) {
+ };
+ if (isInitiator) {
     console.log('Creating Data Channel');
     $scope.dataChannel = $scope.peerConn.createDataChannel('photos');
     $scope.onDataChannelCreated($scope.dataChannel);
 
     console.log('Creating an offer');
-    $scope.peerConn.createOffer($scope.onLocalSessionCreated, logError);
+    $scope.peerConn.createOffer($scope.onLocalSessionCreated, $scope.logError);
    } else {
     $scope.peerConn.ondatachannel = function(event) {
       console.log('ondatachannel:', event.channel);
@@ -188,13 +185,13 @@ $scope.createPeerConnection       = function (isInitiator, config) {
       $scope.onDataChannelCreated($scope.dataChannel);
     };
    }
- };
+  };
 $scope.onLocalSessionCreated      = function (desc) {
   console.log('local session created:', desc);
   $scope.peerConn.setLocalDescription(desc, function() {
     console.log('sending local desc:', $scope.peerConn.localDescription);
     $scope.sendMessage($scope.peerConn.localDescription);
-  }, logError);
+  }, $scope.logError);
  };
 $scope.onDataChannelCreated       = function (channel) {
   console.log('onDataChannelCreated:', channel);
@@ -272,19 +269,31 @@ $scope.receiveDataFirefoxFactory  = function () {
  * Aux functions, mostly UI-related
  ****************************************************************************/
 
-$scope.snapPhoto 			= function () {
+$scope.snapPhoto 			      = function () {
   $scope.photoContext.drawImage($scope.video, 0, 0, $scope.photoContextW, $scope.photoContextH);
   $scope.show($scope.photo, $scope.sendBtn);
  };
-$scope.sendPhoto 			= function () {
+$scope.sendPhoto 			      = function () {
+
   // Split data channel message in chunks of this byte length.
   var CHUNK_LEN = 64000;
 
   var img = $scope.photoContext.getImageData(0, 0, $scope.photoContextW, $scope.photoContextH),
+
     len = img.data.byteLength,
     n = len / CHUNK_LEN | 0;
 
   console.log('Sending a total of ' + len + ' byte(s)');
+  console.log("photo " + $scope.photo );
+  console.log("photoContext " + $scope.photoContext );
+  console.log("photoContext value " + $scope.photoContext.value );
+  console.log("photo value " + $scope.photo.value );
+  console.log("img " + img);
+  console.log("$scope.photoContextW " + $scope.photoContextW );
+  console.log("$scope.photoContextH " + $scope.photoContextH );
+  console.log("len " + len );
+  console.log("$scope.dataChannel " + $scope.dataChannel );
+
   $scope.dataChannel.send(len);
   
   // split the photo and send in chunks of about 64KB
@@ -301,11 +310,11 @@ $scope.sendPhoto 			= function () {
     $scope.dataChannel.send(img.data.subarray(n * CHUNK_LEN));
   }
  };
-$scope.snapAndSend 			= function () {
+$scope.snapAndSend 			    = function () {
   $scope.snapPhoto();
   $scope.sendPhoto();
  };
-$scope.renderPhoto 			= function (data) {
+$scope.renderPhoto 			    = function (data) {
   var canvas = document.createElement('canvas');
   canvas.classList.add('incomingPhoto');
   trail.insertBefore(canvas, trail.firstChild);
@@ -331,20 +340,20 @@ $scope.setCanvasDimensions 	= function () {
   $scope.photoContextW = 300; //300;
   $scope.photoContextH = 150; //150;
  };
-$scope.show 				= function () {
+$scope.show 				        = function () {
   Array.prototype.forEach.call(arguments, function(elem) {
     elem.style.display = null;
   });
  };
-$scope.hide 				= function () {
+$scope.hide 				        = function () {
   Array.prototype.forEach.call(arguments, function(elem) {
     elem.style.display = 'none';
   });
  };
-$scope.randomToken 			= function () {
+$scope.randomToken 			    = function () {
   return Math.floor((1 + Math.random()) * 1e16).toString(16).substring(1);
  };
-$scope.logError 			= function (err) {
+$scope.logError 			      = function (err) {
   console.log(err.toString(), err);
  };
 
