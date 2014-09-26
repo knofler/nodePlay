@@ -24,6 +24,8 @@ $scope.snapBtn        = document.getElementById('snap');
 $scope.sendBtn        = document.getElementById('send');
 $scope.snapAndSendBtn = document.getElementById('snapAndSend');
 
+$scope.localStream;
+
 // Default values for width and height of the photoContext.
 // Maybe redefined later based on user's webcam video stream.
 $scope.photoContextW = 300,
@@ -110,7 +112,8 @@ $scope.updateRoomURL = function(ipaddr) {
 $scope.grabWebCamVideo 			    = function () {
   console.log('Getting user media (video) ...');
   getUserMedia({
-    video: true
+    video: true,
+    audio: true
   }, $scope.getMediaSuccessCallback, $scope.getMediaErrorCallback);
  };
 $scope.getMediaSuccessCallback 	= function (stream) {
@@ -118,6 +121,11 @@ $scope.getMediaSuccessCallback 	= function (stream) {
   console.log('getUserMedia video stream URL:', streamURL);
   window.stream = stream; // stream available to console
   $scope.video.src = streamURL;
+   trace('Received local stream');
+  // Call the polyfill wrapper to attach the media stream to this element.
+  attachMediaStream($scope.video, stream);
+  $scope.localStream = stream;
+  // $scope.callBtn.disabled = false;
   $scope.show($scope.snapBtn);
  };
 $scope.getMediaErrorCallback 	  = function (error) {
@@ -193,12 +201,17 @@ $scope.onLocalSessionCreated      = function (desc) {
     $scope.sendMessage($scope.peerConn.localDescription);
   }, $scope.logError);
  };
+$scope.gotRemoteStream            = function (e) {
+  // Call the polyfill wrapper to attach the media stream to this element.
+  attachMediaStream(remoteVideo, e.stream);
+  trace('pc2 received remote stream');
+ }; 
 $scope.onDataChannelCreated       = function (channel) {
   console.log('onDataChannelCreated:', channel);
   channel.onopen = function() {
     console.log('CHANNEL opened!!!');
   };
-
+   console.log(channel.label);
   channel.onmessage = (webrtcDetectedBrowser === 'firefox') ?
     $scope.receiveDataFirefoxFactory() :
     $scope.receiveDataChromeFactory();
@@ -264,7 +277,6 @@ $scope.receiveDataFirefoxFactory  = function () {
   };
  };
 
-
 /****************************************************************************
  * Aux functions, mostly UI-related
  ****************************************************************************/
@@ -277,13 +289,14 @@ $scope.sendPhoto 			      = function () {
 
   // Split data channel message in chunks of this byte length.
   var CHUNK_LEN = 64000;
+ 
   var img = $scope.photoContext.getImageData(0, 0, $scope.photoContextW, $scope.photoContextH),
 
     len = img.data.byteLength,
     n = len / CHUNK_LEN | 0;
   console.log('Sending a total of ' + len + ' byte(s)');
   $scope.dataChannel.send(len);
-  
+
   // split the photo and send in chunks of about 64KB
   for (var i = 0; i < n; i++) {
     var start = i * CHUNK_LEN,
@@ -298,6 +311,19 @@ $scope.sendPhoto 			      = function () {
     $scope.dataChannel.send(img.data.subarray(n * CHUNK_LEN));
   }
  };
+$scope.sendStream           = function () {
+
+  var videoTracks = $scope.localStream.getVideoTracks();
+  var audioTracks = $scope.localStream.getAudioTracks();
+
+  if (videoTracks.length > 0)
+    trace('Using video device: ' + videoTracks[0].label);
+  if (audioTracks.length > 0)
+    trace('Using audio device: ' + audioTracks[0].label);
+
+  // $scope.dataChannel.send(videoTracks);
+   $scope.streamVideo(videoTracks);
+ };
 $scope.snapAndSend 			    = function () {
   $scope.snapPhoto();
   $scope.sendPhoto();
@@ -305,12 +331,19 @@ $scope.snapAndSend 			    = function () {
 $scope.renderPhoto 			    = function (data) {
   var canvas = document.createElement('canvas');
   canvas.classList.add('incomingPhoto');
-  trail.insertBefore(canvas, trail.firstChild);
+  $scope.trail.insertBefore(canvas, $scope.trail.firstChild);
 
   var context = canvas.getContext('2d');
   var img = context.createImageData($scope.photoContextW, $scope.photoContextH);
   img.data.set(data);
   context.putImageData(img, 0, 0);
+ };
+$scope.streamVideo          = function (data) {
+  var remoteVideo = document.createElement('canvas');
+  remoteVideo.classList.add('incomingVideo');
+  $scope.trail.insertBefore(remoteVideo, $scope.trail.firstChild);
+  var context = remoteVideo.getContext('2d');
+  $scope.peerConn.onaddstream = $scope.gotRemoteStream;
  };
 $scope.setCanvasDimensions 	= function () {
   if ($scope.video.videoWidth === 0) {
