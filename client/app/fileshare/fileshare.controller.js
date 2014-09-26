@@ -61,7 +61,7 @@ socket.socket.on('joined', function(room, clientId) {
   $scope.grabWebCamVideo();
  });
 socket.socket.on('full', function(room) {
-  console.log('Room ' + room + ' is full. We will create a new room for you.');
+  alert('Room ' + room + ' is full. We will create a new room for you.');
   window.location.hash = '';
   window.location.reload();
  });

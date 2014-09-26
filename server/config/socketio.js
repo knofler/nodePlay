@@ -83,7 +83,7 @@ module.exports = function (socketio) {
         log('Client ID ' + socket.id + ' created room ' + room);
         socket.emit('created', room, socket.id);
 
-      } else if (numClients === 2) {
+      } else if (numClients > 1 && numClients <10) {
         log('Client ID ' + socket.id + ' joined room ' + room);
         socketio.sockets.in(room).emit('join', room);
         socket.join(room);
