@@ -1,34 +1,18 @@
 <div ng-include="'components/navbar/navbar.html'"></div>
 <div class="video" id="container">
-  <h1>Hello Visual World <code>getUserMedia()</code></h1>
-  <span>getUserMedia: select resolution</span>
-  	<p>Click a button to call <code>getUserMedia()</code> with appropriate resolution.</p>
-    <div class='select'>
-      <label for='audioSource'>Audio source: </label><select id='audioSource'></select>
-    </div>
-    <div class='select'>
-      <label for='videoSource'>Video source: </label><select id='videoSource'></select>
-    </div>
-   
-	  <div id="buttons">
-	    <button id="qvga">QVGA</button>
-	    <button id="vga">VGA</button>
-	    <button id="hd">HD</button>
-	  </div>
-	
-	<p id="dimensions"></p>
+  <h2>
+    <span>Room URL: </span><span id="url">10.4.37.221:9000</span>
+  </h2>
 
- <video muted autoplay></video>
+ <video id="localVideo" autoplay></video>
+    <video id="remoteVideo" autoplay></video>
 
-  	<p>Display the video stream from <code>getUserMedia()</code> in the video element.</p>
-</div>
-<div id="container">
-  <h1>Hello Canvas annd CSS Filter<code>getUserMedia() => Canvas and apply CSS filter</code></h1>
-   <button id="snapshot">Take snapshot</button>
-  <button id="filter">Apply a filter</button>
-  <canvas></canvas>
-  <p>Draw a frame from the video onto the canvas element using the <code>drawImage()</code> method.then apply CSS filters.</p>
-</div>
+    <div>
+      <button id="startButton">Start</button>
+      <button id="callButton">Call</button>
+      <button id="answerButton">Answer</button>
+      <button id="hangupButton">Hang Up</button>
+    </div>
 <footer class="footer">
   <div class="container">
       <p>nodeApp Playground |
