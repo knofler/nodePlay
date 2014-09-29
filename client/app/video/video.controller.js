@@ -80,7 +80,7 @@ socket.socket.on('log', function(array) {
 socket.socket.on('message', function(message) {
   console.log('Client received message:', message);
   // signalingMessageCallback(message);
-  $("#remoteVideo").css({"background-color":"red"});
+  // $("#remoteVideo").css({"background-color":"red"});
  });
 
 // Join a room
@@ -248,6 +248,14 @@ function gotRemoteStream(event){
   // Call the polyfill wrapper to attach the media stream to this element.
   attachMediaStream(remoteVideo, event.stream);
   trace('remotePeerConnection received remote stream');
+  
+      remotePeerConnection.onStreamAdded = function(e) {
+                    var video = e.mediaElement;
+                    video.setAttribute('width', 600);
+                    remoteVideo.insertBefore(video, remoteVideo.firstChild);
+
+                    video.play();   
+              };
  };
 function gotLocalIceCandidate(event){
   if (event.candidate) {
