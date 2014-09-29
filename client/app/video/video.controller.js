@@ -6,17 +6,26 @@ angular.module('nodeAppApp')
 /****************************************************************************
  * Initial setup
  ****************************************************************************/
-$scope.configuration = {
+var configuration = {
   'iceServers': [{
     'url': 'stun:stun.l.google.com:19302'
   }]
  };
+var sdpConstraints = {
+  'mandatory': {
+    'OfferToReceiveAudio': true,
+    'OfferToReceiveVideo': true
+  }
+  }; 
 
 var localStream, localPeerConnection, remotePeerConnection,
 servers = null,
 roomURL        = document.getElementById('url'),
+trail          = document.getElementById('trail'),
+
 localVideo = document.getElementById("localVideo"),
 remoteVideo = document.getElementById("remoteVideo"),
+
 startButton = document.getElementById("startButton"),
 callButton = document.getElementById("callButton"),
 answerButton = document.getElementById("answerButton"),
@@ -53,7 +62,7 @@ socket.socket.on('created', function(room, clientId) {
  });
 socket.socket.on('joined', function(room, clientId) {
   console.log('This peer has joined room', room, 'with client ID', clientId);
-  $scope.isInitiator = false;
+  isInitiator = false;
   // $scope.grabWebCamVideo();
  });
 socket.socket.on('full', function(room) {
@@ -63,14 +72,14 @@ socket.socket.on('full', function(room) {
  });
 socket.socket.on('ready', function() {
   // $scope.createPeerConnection($scope.isInitiator, $scope.configuration);
- call();
+ // call();
  });
 socket.socket.on('log', function(array) {
   console.log.apply(console, array);
  });
 socket.socket.on('message', function(message) {
   console.log('Client received message:', message);
-  $scope.signalingMessageCallback(message);
+  // signalingMessageCallback(message);
  });
 
 // Join a room
@@ -82,7 +91,7 @@ if (location.hostname.match(/localhost|127\.0\.0/)) {
 /**
  * Send message to signaling server
  */
-$scope.sendMessage = function(message) {
+function sendMessage (message) {
   console.log('Client sending message: ', message);
   socket.socket.emit('message', message);
  };
@@ -90,7 +99,7 @@ $scope.sendMessage = function(message) {
 /**````````````````````````````
  * Updates URL on the page so that users can copy&paste it to their peers.
  */
- function updateRoomURL(ipaddr) {
+function updateRoomURL(ipaddr) {
   var url;
   if (!ipaddr) {
     url = location.href;
@@ -100,25 +109,13 @@ $scope.sendMessage = function(message) {
   roomURL.innerHTML = url;
  };
 
+
 /****************************************************************************
  * User media (webcam)
  ****************************************************************************/
 function trace(text) {
   console.log((performance.now() / 1000).toFixed(3) + ": " + text);
- }
-function gotStream(stream){
-  trace("Received local stream");
-  localVideo.src = URL.createObjectURL(stream);
-  localStream = stream;
-  callButton.disabled = false;
  };
-// $scope.grabWebCamVideo 			    = function () {
-//   console.log('Getting user media (video) ...');
-//   getUserMedia({
-//     video: true,
-//     audio: true
-//   }, $scope.getMediaSuccessCallback, $scope.getMediaErrorCallback);
-//  };
 function getMediaSuccessCallback(stream){
   var streamURL = window.URL.createObjectURL(stream);
   console.log('getUserMedia video stream URL:', streamURL);
@@ -128,38 +125,35 @@ function getMediaSuccessCallback(stream){
   // Call the polyfill wrapper to attach the media stream to this element.
   attachMediaStream(localVideo, stream);
   localStream = stream;
-   callButton.disabled = false;
+  callButton.disabled = false;
  };
-$scope.getMediaErrorCallback 	  = function (error) {
+function getMediaErrorCallback(error) {
   console.log('getUserMedia error:', error);
  };
 function start() {
   trace("Requesting local stream");
   startButton.disabled = true;
-  getUserMedia({audio:true, video:true}, getMediaSuccessCallback,
-    function(error) {
-      trace("getUserMedia error: ", error);
-    });
+  getUserMedia({audio:true, video:true}, getMediaSuccessCallback,getMediaErrorCallback);
  };
 
 /****************************************************************************
  * WebRTC peer connection and data channel
  ****************************************************************************/
 
-$scope.signalingMessageCallback   = function (message) {
+function signalingMessageCallback(message) {
   if (message.type === 'offer') {
     console.log('Got offer. Sending answer to peer.');
-    $scope.peerConn.setRemoteDescription(new RTCSessionDescription(message), function() {},
-      $scope.logError);
-    $scope.peerConn.createAnswer($scope.onLocalSessionCreated, $scope.logError);
+    remotePeerConnection.setRemoteDescription(new RTCSessionDescription(message), function() {},
+      logError);
+    remotePeerConnection.createAnswer(gotRemoteDescription,logError);
 
   } else if (message.type === 'answer') {
     console.log('Got answer.');
-    $scope.peerConn.setRemoteDescription(new RTCSessionDescription(message), function() {},
-      $scope.logError);
+    remotePeerConnection.setRemoteDescription(new RTCSessionDescription(message), function() {},
+      logError);
 
   } else if (message.type === 'candidate') {
-    $scope.peerConn.addIceCandidate(new RTCIceCandidate({
+    localPeerConnection.addIceCandidate(new RTCIceCandidate({
       candidate: message.candidate
     }));
 
@@ -170,45 +164,71 @@ $scope.signalingMessageCallback   = function (message) {
 function call() {
   callButton.disabled = true;
   hangupButton.disabled = false;
+
   trace("Starting call");
-
-  if (localStream.getVideoTracks().length > 0) {
-    trace('Using video device: ' + localStream.getVideoTracks()[0].label);
-  }
-  if (localStream.getAudioTracks().length > 0) {
-    trace('Using audio device: ' + localStream.getAudioTracks()[0].label);
-  }
-
+  // startTime = performance.now();
+  
+  var videoTracks = localStream.getVideoTracks();
+  var audioTracks = localStream.getAudioTracks();
+  
+  if (videoTracks.length > 0)
+    trace('Using video device: ' + videoTracks[0].label);
+  if (audioTracks.length > 0)
+    trace('Using audio device: ' + audioTracks[0].label);
+  
+  var servers = null;
+  
   localPeerConnection = new RTCPeerConnection(servers);
   trace("Created local peer connection object localPeerConnection");
+  // send Local ice candidates to the remote peer
   localPeerConnection.onicecandidate = gotLocalIceCandidate;
 
-  // remotePeerConnection = new RTCPeerConnection(servers);
-  // trace("Created remote peer connection object remotePeerConnection");
-  // remotePeerConnection.onicecandidate = gotRemoteIceCandidate;
-  // remotePeerConnection.onaddstream = gotRemoteStream;
+  remotePeerConnection = new RTCPeerConnection(servers);
+  trace("Created Remote peer connection object remotePeerConnection");
+  // send Local ice candidates to the remote peer
+  remotePeerConnection.onicecandidate = gotRemoteIceCandidate;
+ 
+  localPeerConnection.oniceconnectionstatechange = function(e) { onIceStateChange('localPeerConnection', e) };
+  remotePeerConnection.oniceconnectionstatechange = function(e) { onIceStateChange('remotePeerConnection', e) };
+  
+  remotePeerConnection.onaddstream = gotRemoteStream;
 
   localPeerConnection.addStream(localStream);
-  trace("Added localStream to localPeerConnection");
-  // localPeerConnection.createOffer(gotLocalDescription,handleError);
+  trace('Added local stream to localPeerConnection');
+
+  trace('localPeerConnection createOffer start');
+  localPeerConnection.createOffer(onCreateOfferSuccess, onCreateSessionDescriptionError);
  };
+
 function answer(){
+  answerButton.disabled = true;
+  hangupButton.disabled = false;
+  trace("Answering call");
+
   remotePeerConnection = new RTCPeerConnection(servers);
   trace("Created remote peer connection object remotePeerConnection");
+  
   remotePeerConnection.onicecandidate = gotRemoteIceCandidate;
-  remotePeerConnection.onaddstream = gotRemoteStream;
-   localPeerConnection.createOffer(gotLocalDescription,handleError);
+  trace("Added RemoteStream to RemotePeerConnection");
+
+  remotePeerConnection.createAnswer(gotRemoteDescription,logError);
+
  } ;
+function onLocalSessionCreated(desc) {
+  console.log('local session created:', desc);
+  localPeerConnection.setLocalDescription(desc, function() {
+    console.log('sending local desc:', localPeerConnection.localDescription);
+    sendMessage(localPeerConnection.localDescription);
+  },logError);
+ };
 function gotLocalDescription(description){
   localPeerConnection.setLocalDescription(description);
-  // trace("Offer from localPeerConnection: \n" + description.sdp);
-  remotePeerConnection.setRemoteDescription(description);
-  remotePeerConnection.createAnswer(gotRemoteDescription,handleError);
+  trace("Offer from localPeerConnection: \n" + description.sdp);
  };
 function gotRemoteDescription(description){
-  remotePeerConnection.setLocalDescription(description);
-  trace("Answer from remotePeerConnection: \n" + description.sdp);
   localPeerConnection.setRemoteDescription(description);
+  trace("Answer from remotePeerConnection: \n" + description.sdp);
+  remotePeerConnection.onaddstream = gotRemoteStream;
  };
 function hangup() {
   trace("Ending call");
@@ -219,68 +239,99 @@ function hangup() {
   hangupButton.disabled = true;
   callButton.disabled = false;
  };
+function gotLocalStream(event){
+  localVideo.src = URL.createObjectURL(event.stream);
+  trace("Local video stream added to communication channel");
+ }; 
 function gotRemoteStream(event){
-  remoteVideo.src = URL.createObjectURL(event.stream);
-  trace("Received remote stream");
+  // Call the polyfill wrapper to attach the media stream to this element.
+  attachMediaStream(remoteVideo, e.stream);
+  trace('remotePeerConnection received remote stream');
  };
 function gotLocalIceCandidate(event){
   if (event.candidate) {
-    remotePeerConnection.addIceCandidate(new RTCIceCandidate(event.candidate));
+    localPeerConnection.addIceCandidate(new RTCIceCandidate(event.candidate),
+                                        function() { onAddIceCandidateSuccess('localPeerConnection') },
+                                        function(err) { onAddIceCandidateError('localPeerConnection', err); });
     trace("Local ICE candidate: \n" + event.candidate.candidate);
-  }
+    // sendMessage({
+    //     type: 'candidate',
+    //     label: event.candidate.sdpMLineIndex,
+    //     id: event.candidate.sdpMid,
+    //     candidate: event.candidate.candidate
+    //   });
+  }else {
+    console.log('End of candidates.');
+    }
  };
 function gotRemoteIceCandidate(event){
   if (event.candidate) {
-    localPeerConnection.addIceCandidate(new RTCIceCandidate(event.candidate));
-    trace("Remote ICE candidate: \n " + event.candidate.candidate);
+    remotePeerConnection.addIceCandidate(new RTCIceCandidate(event.candidate),
+                                        function() { onAddIceCandidateSuccess('remotePeerConnection') },
+                                        function(err) { onAddIceCandidateError('remotePeerConnection', err); });
+    trace("Remote ICE candidate: \n" + event.candidate.candidate);
+    // sendMessage({
+    //     type: 'candidate',
+    //     label: event.candidate.sdpMLineIndex,
+    //     id: event.candidate.sdpMid,
+    //     candidate: event.candidate.candidate
+    //   });
+  }else {
+    console.log('End of candidates.');
+    }
+ }; 
+function onAddIceCandidateSuccess(pc) {
+  trace(pc + ' addIceCandidate success');
+ };
+function onAddIceCandidateError(pc, error) {
+  trace(pc + ' failed to add ICE Candidate: ' + error.toString());
+ };
+function onIceStateChange(pc, event) {
+  if (pc) {
+    trace(pc + ' ICE state: ' + pc.iceConnectionState);
   }
  };
-function handleError(){}
+function onCreateSessionDescriptionError(error) {
+  trace('Failed to create session description: ' + error.toString());
+ };
+function onCreateOfferSuccess(desc) {
+  trace('Offer from localPeerConnection\n');
+  trace('Offer from localPeerConnection\n' + desc.sdp);
+  trace('localPeerConnection setLocalDescription start');
+  localPeerConnection.setLocalDescription(desc, function() { onSetLocalSuccess('localPeerConnection'); });
+  trace('remotePeerConnection setRemoteDescription start');
+  remotePeerConnection.setRemoteDescription(desc, function() { onSetRemoteSuccess('remotePeerConnection'); });
+  trace('remotePeerConnection createAnswer start');
+  // Since the 'remote' side has no media stream we need
+  // to pass in the right constraints in order for it to
+  // accept the incoming offer of audio and video.
+  pc2.createAnswer(onCreateAnswerSuccess,onCreateSessionDescriptionError,sdpConstraints);
+ };  
+function onCreateAnswerSuccess(desc) {
+  trace('Answer from remotePeerConnection:\n');
+  trace('Answer from remotePeerConnection:\n' + desc.sdp);
+  trace('remotePeerConnection setLocalDescription start');
+  remotePeerConnection.setLocalDescription(desc, function() { onSetLocalSuccess('remotePeerConnection'); });
+  trace('localPeerConnection setRemoteDescription start');
+  localPeerConnection.setRemoteDescription(desc, function() { onSetRemoteSuccess('localPeerConnection'); });
+ };
+function onSetLocalSuccess(pc) {
+  trace(pc + ' setLocalDescription complete');
+ };
+function onSetRemoteSuccess(pc) {
+  trace(pc + ' setRemoteDescription complete');
+ };
+function handleError(){};
 
 
 /****************************************************************************
  * Aux functions, mostly UI-related
  ****************************************************************************/
-// $scope.sendStream           = function () {
-
-//   var videoTracks = $scope.localStream.getVideoTracks();
-//   var audioTracks = $scope.localStream.getAudioTracks();
-
-//   if (videoTracks.length > 0)
-//     trace('Using video device: ' + videoTracks[0].label);
-//   if (audioTracks.length > 0)
-//     trace('Using audio device: ' + audioTracks[0].label);
-
-//   // $scope.dataChannel.send(videoTracks);
-//    $scope.streamVideo(videoTracks);
-//  };
-// $scope.streamVideo          = function (data) {
-//   var remoteVideo = document.createElement('canvas');
-//   remoteVideo.classList.add('incomingVideo');
-//   $scope.trail.insertBefore(remoteVideo, $scope.trail.firstChild);
-//   var context = remoteVideo.getContext('2d');
-//   $scope.peerConn.onaddstream = $scope.gotRemoteStream;
-//  };
-$scope.setCanvasDimensions 	= function () {
-  if ($scope.video.videoWidth === 0) {
-    setTimeout($scope.setCanvasDimensions, 200);
-    return;
-  }
-
-  console.log('video width:', $scope.video.videoWidth, 'height:', $scope.video.videoHeight);
-
-  $scope.photoContextW = $scope.video.videoWidth / 2;
-  $scope.photoContextH = $scope.video.videoHeight / 2;
-  //photo.style.width = photoContextW + 'px';
-  //photo.style.height = photoContextH + 'px';
-  // TODO: figure out right dimensions
-  $scope.photoContextW = 300; //300;
-  $scope.photoContextH = 150; //150;
- };
-  });
 function randomToken() {
   return Math.floor((1 + Math.random()) * 1e16).toString(16).substring(1);
  };
 function logError(err) {
   console.log(err.toString(), err);
  };
+
+});
