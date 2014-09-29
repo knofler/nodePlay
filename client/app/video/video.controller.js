@@ -80,6 +80,7 @@ socket.socket.on('log', function(array) {
 socket.socket.on('message', function(message) {
   console.log('Client received message:', message);
   // signalingMessageCallback(message);
+  $("#remoteVideo").css({"background-color":"red"});
  });
 
 // Join a room
@@ -245,7 +246,7 @@ function gotLocalStream(event){
  }; 
 function gotRemoteStream(event){
   // Call the polyfill wrapper to attach the media stream to this element.
-  attachMediaStream(remoteVideo, e.stream);
+  attachMediaStream(remoteVideo, event.stream);
   trace('remotePeerConnection received remote stream');
  };
 function gotLocalIceCandidate(event){
@@ -254,12 +255,12 @@ function gotLocalIceCandidate(event){
                                         function() { onAddIceCandidateSuccess('localPeerConnection') },
                                         function(err) { onAddIceCandidateError('localPeerConnection', err); });
     trace("Local ICE candidate: \n" + event.candidate.candidate);
-    // sendMessage({
-    //     type: 'candidate',
-    //     label: event.candidate.sdpMLineIndex,
-    //     id: event.candidate.sdpMid,
-    //     candidate: event.candidate.candidate
-    //   });
+    sendMessage({
+        type: 'candidate',
+        label: event.candidate.sdpMLineIndex,
+        id: event.candidate.sdpMid,
+        candidate: event.candidate.candidate
+      });
   }else {
     console.log('End of candidates.');
     }
@@ -305,7 +306,7 @@ function onCreateOfferSuccess(desc) {
   // Since the 'remote' side has no media stream we need
   // to pass in the right constraints in order for it to
   // accept the incoming offer of audio and video.
-  pc2.createAnswer(onCreateAnswerSuccess,onCreateSessionDescriptionError,sdpConstraints);
+  remotePeerConnection.createAnswer(onCreateAnswerSuccess,onCreateSessionDescriptionError,sdpConstraints);
  };  
 function onCreateAnswerSuccess(desc) {
   trace('Answer from remotePeerConnection:\n');
