@@ -103,6 +103,12 @@ module.exports = function (socketio) {
         });
       }
      });
+    socket.on('offerSend',function(data){
+      socket.broadcast.emit('offerForAnswer',data);
+    });
+    socket.on('videoReady',function(data){
+      socket.broadcast.emit('streamVideo',data);
+    });
 
     // Call onConnect.
     onConnect(socket);
